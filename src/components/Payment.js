@@ -7,6 +7,7 @@ import { CardElement, useStripe, useElements } from "@stripe/react-stripe-js"
 import CurrencyFormat from "react-currency-format";
 import { getBasketTotal } from "../store/reducer";
 import axios from "../utils/axios";
+import { db } from "../firebase"
 
 function Payment() {
     const [{basket, user}, dispatch] = useStateValue()
@@ -19,39 +20,49 @@ function Payment() {
     const [disabled, setDisabled] = useState(true)
     const [processing, setProcessing] = useState(false)
     const [succeeded, setSucceeded] = useState(false)
-    const [clientSecret, setClientSecret] = useState(true)
-
-    useEffect(() => {
-        const getClientSecret = async () => {
-            const response = await axios({
-                method: 'post',
-                //Stripe expects the total in a currencies submits
-                url: `/payments/create?total=${getBasketTotal(basket) * 100}`
-            })
-            setClientSecret(response.data.clientSecret)
-        }
-
-        getClientSecret()
-    }, [basket])
 
     const handleSubmit = async (event) => {
         event.preventDefault()
         setProcessing(true)
 
-        const payload = await stripe.confirmCardPayment(clientSecret, {
-            payment_method: {
-                card: elements.getElement(CardElement)
-            }
-        }).then(({paymentIntent}) => {
+        const { error, paymentMethod } = await stripe.createPaymentMethod({
+            type: "card",
+            card: elements.getElement(CardElement)
+        })
+        if (!error) {
+            const { id } = paymentMethod;
             //paymentIntent = payment confirmation
+            console.log(id)
+
+            await axios({
+                method: 'post',
+                //Stripe expects the total in a currencies submits
+                url: `/payments/create?total=${getBasketTotal(basket) * 100}&id=${id}`,
+            })
+            .then(({data}) => {
+                console.log(data)
+                db
+                .collection('users')
+                .doc(user?._delegate?.uid)
+                .collection('orders')
+                .doc(data?.id)
+                .set({
+                    basket: basket,
+                    amount: data?.amount,
+                    created: data?.created
+                })
+            })
 
             setSucceeded(true)
             setError(null)
             setProcessing(false)
 
-            navigate("/orders")
-        })
+            dispatch({
+                type: 'EMPTY_BASKET'
+            })
 
+            navigate("/orders")
+        }
     }
 
     const handleChange = (event) => {
