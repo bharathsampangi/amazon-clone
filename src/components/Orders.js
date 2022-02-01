@@ -2,10 +2,13 @@ import React, { useEffect, useState } from "react"
 import { db } from "../firebase"
 import './Orders.css'
 import {useStateValue} from "../context/StateProvider"
+import Order from "./Order"
 
 function Orders() {
     const [{user}, dispatch] = useStateValue()
     const [orders, setOrders] = useState([])
+
+    console.log(orders)
 
     useEffect(() => {
         if(user) {
@@ -30,9 +33,9 @@ function Orders() {
             <h1>Your orders</h1>
 
             <div className="orders__order">
-                {orders?.map((order) => {
-
-                })}
+                {orders?.map((order) => (
+                    <Order order={order} />
+                ))}
             </div>
         </div>
     )

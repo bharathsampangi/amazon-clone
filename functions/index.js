@@ -1,7 +1,6 @@
 const functions = require("firebase-functions");
 const express = require("express");
 const cors = require("cors");
-const { response } = require("express");
 const stripe = require("stripe")("sk_test_guPDZUbT9WTP4myE08eoPuoR00u7IPf9QT");
 
 // API
@@ -14,7 +13,7 @@ app.use(cors())
 app.use(express.json())
 
 // - API routes
-app.get('/', (request, response) => response.status(200).send('hello world'))
+app.get("/", (request, response) => response.status(200).send("hello world"))
 
 app.post("/payments/create", async (req, res) => {
     const total = req.query.total;
